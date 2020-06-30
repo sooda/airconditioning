@@ -10,6 +10,8 @@ render_outdoor_part = true;
 // this adapter goes to a panel that replaces one of my window frames for the summer
 // the previous hack had a 16cm hose
 panel_hole_diameter = 160;
+// a flange bit to keep the part close to the panel; "radius" dimension
+collar_width = 10;
 // the pipe goes through the panel
 panel_thickness = 30;
 // the bit between outer_diameter and panel_hole_diameter
@@ -72,7 +74,7 @@ if (render_hose_part) {
 		}
 	}
 	translate([0, 0, pipe_full_length])
-		pipe2(expansion_length, panel_hole_diameter / 2, outer_diameter / 2, inner_diameter / 2);
+		pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
 	translate([0, 0, pipe_full_length + expansion_length])
 		pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
 }

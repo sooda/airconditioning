@@ -11,7 +11,7 @@ render_outdoor_part = true;
 // the previous hack had a 16cm hose
 panel_hole_diameter = 160;
 // a flange bit to keep the part close to the panel; "radius" dimension
-collar_width = 10;
+collar_width = 7;
 // the pipe goes through the panel
 panel_thickness = 30;
 // the bit between outer_diameter and panel_hole_diameter
@@ -33,11 +33,27 @@ tooth_width = 20;
 tooth_height = 10;
 // length of the smaller bit
 pipe_overlap = 12.6;
-// also the length of the outer part for symmetry
-pipe_full_length = 30;
+// the collar where the hose screws into
+outer_part_length = 30;
+// for nice symmetry, outer + expansion = same as outer
+pipe_full_length = outer_part_length - expansion_length;
+
+// the window side part
+flappipe_length = panel_thickness;
+// doesn't need to be very heavy, just smooth
+flappipe_thickness = 2;
+
+// the two parts will rotate and clip on together
+lockring_thickness = 1;
+// thickness and some extra; calibrate this based on your layer height
+lockring_groove = 1.2;
+// how far the bit to snap against is from the end of the lock cutout
+lockblob_distance = 5;
 
 // fight the z
 eps = 0.01;
+// very long
+inf = 1000;
 
 module pipe2(h, outerr_r, outer_r, inner_r) {
 	difference() {
@@ -65,18 +81,73 @@ module notch() {
 }
 
 if (render_hose_part) {
-	difference() {
-		pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
-		union() {
-			notch();
-			rotate([0, 0, 360/3]) notch();
-			rotate([0, 0, 2*360/3]) notch();
+	color("yellow") {
+		difference() {
+			pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
+			union() {
+				notch();
+				rotate([0, 0, 360/3]) notch();
+				rotate([0, 0, 2*360/3]) notch();
+			}
+		}
+		translate([0, 0, pipe_full_length])
+			pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
+		translate([0, 0, pipe_full_length + expansion_length])
+			pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
+	}
+}
+
+// a pizza slice is under 90 degrees big and exists in the first quadant, lies on top of the x axis
+module pizzamask(angle) {
+	intersection() {
+		// first quadrant
+		translate([0, 0, -inf/2])
+			cube([inf, inf, inf]);
+
+		// from x axis counterclockwise
+		rotate([0,0,angle-90]) translate([0, 0, -inf/2])
+			cube([inf, inf, inf]);
+	}
+}
+
+// a difference of two of these will glitch in the outer face no matter how big epsilon
+module pizzapipe(h, outer_r, inner_r, angle) {
+	intersection() {
+		pipe(h, outer_r, inner_r);
+		pizzamask(angle);
+	}
+}
+
+// for matching pizza slice angles with mm dimensions
+// a/360 * 2*pi*r = s
+function angle_for_circumference(s, r) = 180 / PI * s / r;
+
+if (render_outdoor_part) {
+	translate([0, 0, pipe_full_length + expansion_length]) {
+		color("green") {
+			pipe(flappipe_length, inner_diameter / 2, inner_diameter / 2 - flappipe_thickness);
+		}
+		color("magenta") {
+			// the sync ring
+			translate([0,0, lockring_groove + lockring_thickness])
+				pipe(1, inner_diameter / 2 + lockring_thickness, inner_diameter / 2);
+			// the slider
+			difference() {
+				pizzapipe(lockring_groove + lockring_thickness,
+						inner_diameter / 2 + lockring_thickness,
+						inner_diameter / 2, 45);
+				// cutout a bit higher and offset for the stop
+				rotate([0, 0, -angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
+					translate([0, 0, lockring_thickness]) { // groove will fit here
+						pizzapipe(10, inner_diameter / 2 + lockring_thickness + eps, inner_diameter / 2 - eps, 45 + 2 * eps);
+					}
+				}
+			}
+			// the lock blob
+			rotate([0,0,45-angle_for_circumference(lockblob_distance, inner_diameter / 2)])
+			translate([inner_diameter / 2, 0, lockring_thickness]) {
+				cylinder(h=lockring_groove, r=lockring_thickness / 2, $fs=0.1);
+			}
 		}
 	}
-	translate([0, 0, pipe_full_length])
-		pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
-	translate([0, 0, pipe_full_length + expansion_length])
-		pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
-}
-if (render_outdoor_part) {
 }

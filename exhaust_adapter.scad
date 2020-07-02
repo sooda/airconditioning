@@ -6,6 +6,8 @@
 render_hose_part = true;
 // the rain filter
 render_outdoor_part = true;
+// render the full pipe, turn off to see the lock parts
+show_body = true;
 
 // this adapter goes to a panel that replaces one of my window frames for the summer
 // the previous hack had a 16cm hose
@@ -43,12 +45,21 @@ flappipe_length = panel_thickness;
 // doesn't need to be very heavy, just smooth
 flappipe_thickness = 2;
 
+// groove depth into the flap pipe
+lockring_depth = 1;
 // the two parts will rotate and clip on together
-lockring_thickness = 1;
+lockring_thickness = 2;
 // thickness and some extra; calibrate this based on your layer height
-lockring_groove = 1.2;
+lockring_groove = 2.2;
 // how far the bit to snap against is from the end of the lock cutout
 lockblob_distance = 5;
+
+// use this to lift the inner bit out for debugging
+parts_shift = 0;
+//parts_shift = 1.5 * panel_thickness;
+
+// angle for visual debugging of the lock knob
+lockviz_delta = 0;
 
 // fight the z
 eps = 0.01;
@@ -59,15 +70,15 @@ module pipe2(h, outerr_r, outer_r, inner_r) {
 	difference() {
 		cylinder(h=h, r1=outer_r, r2=outerr_r, center=false, $fn=360);
 		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r1=inner_r, r2=inner_r, center=false, $fn=360);
+			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
 	}
 }
 
 module pipe(h, outer_r, inner_r) {
 	difference() {
-		cylinder(h=h, r1=outer_r, r2=outer_r, center=false, $fn=360);
+		cylinder(h=h, r=outer_r, center=false, $fn=360);
 		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r1=inner_r, r2=inner_r, center=false, $fn=360);
+			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
 	}
 }
 
@@ -77,23 +88,6 @@ module notch() {
 			cube([outer_diameter / 2 + eps, tooth_width, tooth_height]);
 		translate([0, 0, -eps])
 			cube([inner_diameter / 2 + lock_tooth_ease, tooth_width, tooth_height]);
-	}
-}
-
-if (render_hose_part) {
-	color("yellow") {
-		difference() {
-			pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
-			union() {
-				notch();
-				rotate([0, 0, 360/3]) notch();
-				rotate([0, 0, 2*360/3]) notch();
-			}
-		}
-		translate([0, 0, pipe_full_length])
-			pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
-		translate([0, 0, pipe_full_length + expansion_length])
-			pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
 	}
 }
 
@@ -122,32 +116,91 @@ module pizzapipe(h, outer_r, inner_r, angle) {
 // a/360 * 2*pi*r = s
 function angle_for_circumference(s, r) = 180 / PI * s / r;
 
-if (render_outdoor_part) {
-	translate([0, 0, pipe_full_length + expansion_length]) {
-		color("green") {
-			pipe(flappipe_length, inner_diameter / 2, inner_diameter / 2 - flappipe_thickness);
-		}
-		color("magenta") {
-			// the sync ring
-			translate([0,0, lockring_groove + lockring_thickness])
-				pipe(1, inner_diameter / 2 + lockring_thickness, inner_diameter / 2);
-			// the slider
+module latchpin(angle) {
+	translate([0, 0, pipe_full_length + expansion_length
+			+ lockring_thickness + (lockring_groove - lockring_thickness) / 2]) {
+		rotate([0, 0, angle - angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
 			difference() {
-				pizzapipe(lockring_groove + lockring_thickness,
-						inner_diameter / 2 + lockring_thickness,
-						inner_diameter / 2, 45);
-				// cutout a bit higher and offset for the stop
-				rotate([0, 0, -angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
-					translate([0, 0, lockring_thickness]) { // groove will fit here
-						pizzapipe(10, inner_diameter / 2 + lockring_thickness + eps, inner_diameter / 2 - eps, 45 + 2 * eps);
-					}
+				// the pin itself
+				pizzapipe(lockring_thickness,
+						inner_diameter / 2,
+						inner_diameter / 2 - lockring_depth, 45);
+				// the lock notch
+				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_thickness, inner_diameter / 2)])
+				// FIXME: make some of the geometry common for the pin and the groove
+				translate([inner_diameter / 2 - lockring_depth, 0, 0 -eps /* was lockring_thickness */]) {
+					cylinder(h=lockring_groove, r=1.05 * lockring_depth / 2, $fs=0.1);
 				}
 			}
-			// the lock blob
-			rotate([0,0,45-angle_for_circumference(lockblob_distance, inner_diameter / 2)])
-			translate([inner_diameter / 2, 0, lockring_thickness]) {
-				cylinder(h=lockring_groove, r=lockring_thickness / 2, $fs=0.1);
+		}
+	}
+}
+
+if (render_hose_part) {
+	if (show_body) {
+		color("yellow") {
+			difference() {
+				pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
+				union() {
+					notch();
+					rotate([0, 0, 360/3]) notch();
+					rotate([0, 0, 2*360/3]) notch();
+				}
 			}
+			translate([0, 0, pipe_full_length])
+				pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
+			translate([0, 0, pipe_full_length + expansion_length])
+				pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
+		}
+	}
+	color("blue") {
+		latchpin(-lockviz_delta /*- angle_for_circumference(lockring_thickness, inner_diameter / 2)*/);
+		latchpin(180 - lockviz_delta);
+	}
+}
+
+module lockslider(angle) {
+	rotate([0, 0, angle]) {
+		// the slider
+		difference() {
+			pizzapipe(lockring_groove + lockring_thickness,
+					inner_diameter / 2,
+					inner_diameter / 2 - lockring_depth, 45);
+			// cutout a bit higher and offset for the stop
+			rotate([0, 0, -angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
+				translate([0, 0, lockring_thickness]) { // groove will fit here
+					pizzapipe(lockring_groove + lockring_thickness,
+					inner_diameter / 2 + eps,
+					inner_diameter / 2 - lockring_depth - eps,
+					45 + 2 * eps);
+				}
+			}
+		}
+		// the lock blob
+		rotate([0, 0, 45 - angle_for_circumference(lockblob_distance, inner_diameter / 2)])
+		translate([inner_diameter / 2 - lockring_depth, 0, lockring_thickness]) {
+			cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
+		}
+	}
+}
+
+if (render_outdoor_part) {
+	translate([0, 0, parts_shift])
+	translate([0, 0, pipe_full_length + expansion_length]) {
+		if (show_body) {
+			color("green") {
+				difference() {
+					pipe(flappipe_length, inner_diameter / 2, inner_diameter / 2 - flappipe_thickness);
+					translate([0, 0, -eps])
+						pipe(lockring_thickness + lockring_groove,
+								inner_diameter / 2 + eps,
+								inner_diameter / 2 - lockring_depth);
+				}
+			}
+		}
+		color("magenta") {
+			lockslider(0);
+			lockslider(180);
 		}
 	}
 }

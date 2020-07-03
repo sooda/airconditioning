@@ -16,7 +16,7 @@ panel_hole_diameter = 160;
 collar_width = 7;
 // the pipe goes through the panel
 panel_thickness = 30;
-// the bit between outer_diameter and panel_hole_diameter
+// the collar bit between outer_diameter and panel_hole_diameter
 expansion_length = 15;
 
 // outermost dimension
@@ -50,9 +50,12 @@ lockring_depth = 1;
 // the two parts will rotate and clip on together
 lockring_thickness = 2;
 // thickness and some extra; calibrate this based on your layer height
-lockring_groove = 2.2;
+lockring_groove_clearance = 0.2;
+lockring_groove = lockring_thickness + lockring_groove_clearance;
 // how far the bit to snap against is from the end of the lock cutout
 lockblob_distance = 5;
+// multiplier for how much bigger the notch is
+lockblob_clearance = 1.05;
 
 // use this to lift the inner bit out for debugging
 parts_shift = 0;
@@ -61,16 +64,26 @@ parts_shift = 0;
 // angle for visual debugging of the lock knob
 lockviz_delta = 0;
 
-// fight the z
+// fight the z with 1% the feature size
 eps = 0.01;
 // very long
 inf = 1000;
 
+// cone minus inner cylinder
 module pipe2(h, outerr_r, outer_r, inner_r) {
 	difference() {
 		cylinder(h=h, r1=outer_r, r2=outerr_r, center=false, $fn=360);
 		translate([0, 0, -eps])
 			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
+	}
+}
+
+// cylinder minus inner cone
+module pipe3(h, outer_r, innerr_r, inner_r) {
+	difference() {
+		cylinder(h=h, r=outer_r, center=false, $fn=360);
+		translate([0, 0, -eps])
+			cylinder(h=h+2*eps, r1=inner_r, r2=innerr_r, center=false, $fn=360);
 	}
 }
 
@@ -118,7 +131,7 @@ function angle_for_circumference(s, r) = 180 / PI * s / r;
 
 module latchpin(angle) {
 	translate([0, 0, pipe_full_length + expansion_length
-			+ lockring_thickness + (lockring_groove - lockring_thickness) / 2]) {
+			+ lockring_thickness + lockring_groove_clearance / 2]) {
 		rotate([0, 0, angle - angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
 			difference() {
 				// the pin itself
@@ -129,7 +142,7 @@ module latchpin(angle) {
 				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_thickness, inner_diameter / 2)])
 				// FIXME: make some of the geometry common for the pin and the groove
 				translate([inner_diameter / 2 - lockring_depth, 0, 0 -eps /* was lockring_thickness */]) {
-					cylinder(h=lockring_groove, r=1.05 * lockring_depth / 2, $fs=0.1);
+					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
 				}
 			}
 		}
@@ -156,6 +169,13 @@ if (render_hose_part) {
 	color("blue") {
 		latchpin(-lockviz_delta /*- angle_for_circumference(lockring_thickness, inner_diameter / 2)*/);
 		latchpin(180 - lockviz_delta);
+		translate([0, 0, pipe_full_length + expansion_length - 2 * lockring_thickness - lockring_groove_clearance / 2]) {
+			// the stop ring
+			pipe3(2 * lockring_thickness,
+				inner_diameter / 2,
+				inner_diameter / 2 - lockring_thickness,
+				inner_diameter / 2);
+		}
 	}
 }
 

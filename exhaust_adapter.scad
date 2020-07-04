@@ -157,9 +157,13 @@ module latchpin(angle) {
 	translate([0, 0, lockring_length + lockring_groove_clearance / 2]) {
 		rotate([0, 0, angle - angle_for_circumference(lockring_length, inner_diameter / 2)]) {
 			difference() {
-				// the pin itself
+				// the pin itself. The added epsilon gets rid of flickering that supposedly comes
+				// from the pin pizza CSGing exactly against the pipe surface; although it's a
+				// separate operation, it gets visible and might cause some nasty zero-size
+				// geometry? Again, it would be nice to be able to constraint this on exactly the
+				// inner surface, but here we are with floating point math.
 				pizzapipe(lockring_length,
-						inner_diameter / 2 + flappipe_thickness,
+						inner_diameter / 2 + flappipe_thickness + eps,
 						inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
 				// the lock notch
 				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
@@ -174,19 +178,21 @@ module latchpin(angle) {
 
 // the outdoor side of the pipe locking mechanism
 module lockslider(angle) {
+	translate([0, 0, eps]) // fuck that flicker and wrong colors on surfaces
 	rotate([0, 0, angle]) {
 		// the slider including the end stop
 		difference() {
-			pizzapipe(lockring_groove + lockring_length,
+			// yes, +eps. This ensures the surface goes inside the other
+			pizzapipe(lockring_groove + lockring_length + eps,
 					inner_diameter / 2 + flappipe_thickness,
 					inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
 			// cutout a bit higher and offset for the stop
-			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2)]) {
+			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2) - eps]) {
 				translate([0, 0, lockring_length]) { // groove will fit here
 					pizzapipe(lockring_groove + lockring_length,
 					inner_diameter / 2 + flappipe_thickness + eps,
 					inner_diameter / 2 + flappipe_thickness - lockring_depth - eps,
-					45 + 2 * eps);
+					45 + 2*eps);
 				}
 			}
 		}
@@ -212,15 +218,16 @@ module hose_part() {
 						lock_notch_receptable();
 				}
 			}
-			// the collar goes from the interface bit to the face of the panel
-			translate([0, 0, pipe_full_length])
-				pipe_outer_bevel(collar_length,
+			// the collar goes from the interface bit to the face of the panel.
+			// why does the epsilon trick not help here with that hot pixel flicker on the inner face?
+			translate([0, 0, pipe_full_length - eps])
+				pipe_outer_bevel(eps + collar_length,
 					outer_diameter / 2,
 					panel_hole_diameter / 2 + collar_width,
 					inner_diameter / 2);
 			// the bit inside the panel. The inner diameter grabs to the outdoor pipe
-			translate([0, 0, pipe_full_length + collar_length])
-				pipe(panel_thickness,
+			translate([0, 0, pipe_full_length + collar_length - eps])
+				pipe(eps + panel_thickness,
 					panel_hole_diameter / 2,
 					inner_diameter / 2 + flappipe_thickness);
 		}
@@ -247,7 +254,7 @@ module outdoor_part() {
 						inner_diameter / 2);
 					// cut out a bit for the lock mechanism
 					translate([0, 0, -eps])
-						pipe(lockring_length + lockring_groove + 2 * eps,
+						pipe(lockring_length + lockring_groove + 2*eps,
 								inner_diameter / 2 + flappipe_thickness + eps,
 								inner_diameter / 2 + flappipe_thickness - lockring_depth);
 				}

@@ -4,58 +4,73 @@
 // FIXME: use proper cylinder sectors instead of the cube simplification?
 // the connector adapter
 render_hose_part = true;
+// use this to check alignment
+hose_translucent = true;
 // the rain filter
 render_outdoor_part = true;
 // render the full pipe, turn off to see the lock parts
 show_body = true;
 
-// this adapter goes to a panel that replaces one of my window frames for the summer
-// the previous hack had a 16cm hose
-panel_hole_diameter = 160;
-// a flange bit to keep the part close to the panel; "radius" dimension
-collar_width = 7;
-// the pipe goes through the panel
-panel_thickness = 30;
-// the collar bit between outer_diameter and panel_hole_diameter
-expansion_length = 15;
+// measurements of the existing hose attachment:
 
+// the collar where the hose screws into
+outer_length = 30;
 // outermost dimension
 outer_diameter = 152; // 151...152.8
 // not inside the connector, but the outer part of the smaller bit that goes inside this adapter
 inner_diameter = outer_diameter - 2 * 4.4;
 // from the outer bit to the lock tooth lip with some margin
-lock_notch_depth = 2.2;
-// the tooth is a slope, this is the nonzero end
+lock_tooth_notch_depth = 2.2;
+// the tooth is a slope, this is the nonzero end measured against inner_diameter
 lock_tooth_thickness = 1.7;
 // some margin so the locks don't need to be pushed all the way
 lock_tooth_ease = 0.5 * lock_tooth_thickness;
 // lock tooth size in the radial direction
 tooth_width = 20;
-// basically pipe_overlap - lock_notch_depth
+// basically pipe_overlap - lock_tooth_notch_depth
 tooth_height = 10;
 // length of the smaller bit
 pipe_overlap = 12.6;
-// the collar where the hose screws into
-outer_part_length = 30;
-// for nice symmetry, outer + expansion = same as outer
-pipe_full_length = outer_part_length - expansion_length;
 
-// the window side part
-flappipe_length = panel_thickness;
-// doesn't need to be very heavy, just smooth
+// general body sizes:
+
+// this adapter goes to a panel that replaces one of my window frames for the summer
+// the previous hack had a 16cm hose and this goes to the same cutout
+panel_hole_diameter = 160;
+// the pipe goes through the panel
+panel_thickness = 30;
+// a flange bit to keep the part close to the panel; "radius" dimension
+collar_width = 7;
+// the collar bit aesthetic length between outer_diameter and panel_hole_diameter; like this for symmetry
+collar_length = outer_length - pipe_overlap;
+// before the collar, goes around the pipe_overlap bit with inner_diameter
+pipe_full_length = pipe_overlap;//outer_length - collar_length;
+
+// the "outdoor" side part that will have flaps of some sort to block rain:
+
+// how much to reserve outside the panel hole to glue to the actual flap mechanism
+flappipe_joinlength = 2;
+// this goes inside the hose attachment adapter
+flappipe_length = panel_thickness + flappipe_joinlength;
+// doesn't need to be very heavy, just smooth. XXX: quantize according to your 3d printer nozzle
 flappipe_thickness = 2;
 
-// groove depth into the flap pipe
+// the two pipes lock together slightly to ensure consistency:
+
+// groove depth into the flap pipe. XXX: quantize according to your 3d printer nozzle
 lockring_depth = 1;
-// the two parts will rotate and clip on together
-lockring_thickness = 2;
-// thickness and some extra; calibrate this based on your layer height
+// the two parts will rotate and clip on together; this is measured against the indoor end of the outdoor pipe
+lockring_length = 2;
+// length and some extra slop; XXX: quantize
 lockring_groove_clearance = 0.2;
-lockring_groove = lockring_thickness + lockring_groove_clearance;
-// how far the bit to snap against is from the end of the lock cutout
+// consistent dimensions just with slop
+lockring_groove = lockring_length + lockring_groove_clearance;
+// how far the knob to snap against is from the end of the lock groove
 lockblob_distance = 5;
-// multiplier for how much bigger the notch is
+// multiplier for how much bigger the notch is than the blob
 lockblob_clearance = 1.05;
+
+// debug and dev stuff:
 
 // use this to lift the inner bit out for debugging
 parts_shift = 0;
@@ -69,24 +84,7 @@ eps = 0.01;
 // very long
 inf = 1000;
 
-// cone minus inner cylinder
-module pipe2(h, outerr_r, outer_r, inner_r) {
-	difference() {
-		cylinder(h=h, r1=outer_r, r2=outerr_r, center=false, $fn=360);
-		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
-	}
-}
-
-// cylinder minus inner cone
-module pipe3(h, outer_r, innerr_r, inner_r) {
-	difference() {
-		cylinder(h=h, r=outer_r, center=false, $fn=360);
-		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r1=inner_r, r2=innerr_r, center=false, $fn=360);
-	}
-}
-
+// cylinder minus inner cylinder
 module pipe(h, outer_r, inner_r) {
 	difference() {
 		cylinder(h=h, r=outer_r, center=false, $fn=360);
@@ -95,12 +93,21 @@ module pipe(h, outer_r, inner_r) {
 	}
 }
 
-module notch() {
-	translate([0, -tooth_width / 2, 0]) {
-		translate([0, 0, lock_notch_depth])
-			cube([outer_diameter / 2 + eps, tooth_width, tooth_height]);
+// cone minus inner cylinder
+module pipe_outer_bevel(h, outer_r1, outer_r2, inner_r) {
+	difference() {
+		cylinder(h=h, r1=outer_r1, r2=outer_r2, center=false, $fn=360);
 		translate([0, 0, -eps])
-			cube([inner_diameter / 2 + lock_tooth_ease, tooth_width, tooth_height]);
+			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
+	}
+}
+
+// cylinder minus inner cone
+module pipe_inner_bevel(h, outer_r, inner_r1, inner_r2) {
+	difference() {
+		cylinder(h=h, r=outer_r, center=false, $fn=360);
+		translate([0, 0, -eps])
+			cylinder(h=h+2*eps, r1=inner_r1, r2=inner_r2, center=false, $fn=360);
 	}
 }
 
@@ -112,12 +119,14 @@ module pizzamask(angle) {
 			cube([inf, inf, inf]);
 
 		// from x axis counterclockwise
-		rotate([0,0,angle-90]) translate([0, 0, -inf/2])
-			cube([inf, inf, inf]);
+		rotate([0, 0, angle - 90])
+			translate([0, 0, -inf/2])
+				cube([inf, inf, inf]);
 	}
 }
 
-// a difference of two of these will glitch in the outer face no matter how big epsilon
+// a difference of two of these may glitch in the outer face no matter how big epsilon,
+// depending on your gpu driver version?? (in preview mode only)
 module pizzapipe(h, outer_r, inner_r, angle) {
 	intersection() {
 		pipe(h, outer_r, inner_r);
@@ -129,19 +138,33 @@ module pizzapipe(h, outer_r, inner_r, angle) {
 // a/360 * 2*pi*r = s
 function angle_for_circumference(s, r) = 180 / PI * s / r;
 
+// a positive geometry to reduce from the indoor pipe body
+module lock_notch_receptable() {
+	translate([0, -tooth_width / 2, 0]) {
+		translate([0, 0, lock_tooth_notch_depth]) {
+			// the hole bit
+			cube([outer_diameter / 2 + eps, tooth_width, tooth_height]);
+		}
+		translate([0, 0, -eps]) {
+			// the ease bit measured from the floor of the pipe
+			cube([inner_diameter / 2 + lock_tooth_ease, tooth_width, tooth_height]);
+		}
+	}
+}
+
+// the indoor side of the pipe locking mechanism
 module latchpin(angle) {
-	translate([0, 0, pipe_full_length + expansion_length
-			+ lockring_thickness + lockring_groove_clearance / 2]) {
-		rotate([0, 0, angle - angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
+	translate([0, 0, lockring_length + lockring_groove_clearance / 2]) {
+		rotate([0, 0, angle - angle_for_circumference(lockring_length, inner_diameter / 2)]) {
 			difference() {
 				// the pin itself
-				pizzapipe(lockring_thickness,
+				pizzapipe(lockring_length,
 						inner_diameter / 2,
 						inner_diameter / 2 - lockring_depth, 45);
 				// the lock notch
-				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_thickness, inner_diameter / 2)])
+				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
 				// FIXME: make some of the geometry common for the pin and the groove
-				translate([inner_diameter / 2 - lockring_depth, 0, 0 -eps /* was lockring_thickness */]) {
+				translate([inner_diameter / 2 - lockring_depth, 0, 0 -eps /* was lockring_length */]) {
 					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
 				}
 			}
@@ -149,47 +172,18 @@ module latchpin(angle) {
 	}
 }
 
-if (render_hose_part) {
-	if (show_body) {
-		color("yellow") {
-			difference() {
-				pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
-				union() {
-					notch();
-					rotate([0, 0, 360/3]) notch();
-					rotate([0, 0, 2*360/3]) notch();
-				}
-			}
-			translate([0, 0, pipe_full_length])
-				pipe2(expansion_length, panel_hole_diameter / 2 + collar_width, outer_diameter / 2, inner_diameter / 2);
-			translate([0, 0, pipe_full_length + expansion_length])
-				pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
-		}
-	}
-	color("blue") {
-		latchpin(-lockviz_delta /*- angle_for_circumference(lockring_thickness, inner_diameter / 2)*/);
-		latchpin(180 - lockviz_delta);
-		translate([0, 0, pipe_full_length + expansion_length - 2 * lockring_thickness - lockring_groove_clearance / 2]) {
-			// the stop ring
-			pipe3(2 * lockring_thickness,
-				inner_diameter / 2,
-				inner_diameter / 2 - lockring_thickness,
-				inner_diameter / 2);
-		}
-	}
-}
-
+// the outdoor side of the pipe locking mechanism
 module lockslider(angle) {
 	rotate([0, 0, angle]) {
-		// the slider
+		// the slider including the end stop
 		difference() {
-			pizzapipe(lockring_groove + lockring_thickness,
+			pizzapipe(lockring_groove + lockring_length,
 					inner_diameter / 2,
 					inner_diameter / 2 - lockring_depth, 45);
 			// cutout a bit higher and offset for the stop
-			rotate([0, 0, -angle_for_circumference(lockring_thickness, inner_diameter / 2)]) {
-				translate([0, 0, lockring_thickness]) { // groove will fit here
-					pizzapipe(lockring_groove + lockring_thickness,
+			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2)]) {
+				translate([0, 0, lockring_length]) { // groove will fit here
+					pizzapipe(lockring_groove + lockring_length,
 					inner_diameter / 2 + eps,
 					inner_diameter / 2 - lockring_depth - eps,
 					45 + 2 * eps);
@@ -198,21 +192,70 @@ module lockslider(angle) {
 		}
 		// the lock blob
 		rotate([0, 0, 45 - angle_for_circumference(lockblob_distance, inner_diameter / 2)])
-		translate([inner_diameter / 2 - lockring_depth, 0, lockring_thickness]) {
+		translate([inner_diameter / 2 - lockring_depth, 0, lockring_length]) {
 			cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
 		}
 	}
 }
 
-if (render_outdoor_part) {
-	translate([0, 0, parts_shift])
-	translate([0, 0, pipe_full_length + expansion_length]) {
+module hose_part() {
+	if (show_body) {
+		color("yellow") {
+			difference() {
+				pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
+				union() {
+					// TODO: use the pizza cut for these
+					lock_notch_receptable();
+					rotate([0, 0, 360/3])
+						lock_notch_receptable();
+					rotate([0, 0, 2*360/3])
+						lock_notch_receptable();
+				}
+			}
+			// the collar goes from the interface bit to the face of the panel
+			translate([0, 0, pipe_full_length])
+				pipe_outer_bevel(collar_length,
+					outer_diameter / 2,
+					panel_hole_diameter / 2 + collar_width,
+					inner_diameter / 2);
+			// the bit inside the panel. The inner diameter stays consistent all the way
+			// (FIXME: the outdoor part inside this reduces it though, should be adjusted)
+			translate([0, 0, pipe_full_length + collar_length])
+				pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
+		}
+	}
+
+	color("blue") {
+		translate([0, 0, pipe_full_length + collar_length]) {
+			// the stop ring overlaps with the bevel part and is twice as long as
+			// the lock geometry; it faces the lock slides of the outdoor part
+			translate([0, 0, -2 * lockring_length - lockring_groove_clearance / 2]) {
+				pipe_inner_bevel(2 * lockring_length,
+					inner_diameter / 2,
+					inner_diameter / 2,
+					inner_diameter / 2 - lockring_length);
+			}
+			// the latch pins hover above the stop ring
+			latchpin(-lockviz_delta);
+			latchpin(180 - lockviz_delta);
+		}
+	}
+}
+
+module outdoor_part() {
+	// this part is positioned exactly at the panel face
+	translate([0, 0, pipe_full_length + collar_length]) {
 		if (show_body) {
 			color("green") {
 				difference() {
-					pipe(flappipe_length, inner_diameter / 2, inner_diameter / 2 - flappipe_thickness);
+					// the major body (FIXME: inner diameter not consistent;
+					// fix it and the stop ring will be easier to print too because it will be just a step)
+					pipe(flappipe_length,
+						inner_diameter / 2,
+						inner_diameter / 2 - flappipe_thickness);
+					// cut out a bit for the lock mechanism
 					translate([0, 0, -eps])
-						pipe(lockring_thickness + lockring_groove,
+						pipe(lockring_length + lockring_groove + eps,
 								inner_diameter / 2 + eps,
 								inner_diameter / 2 - lockring_depth);
 				}
@@ -223,4 +266,16 @@ if (render_outdoor_part) {
 			lockslider(180);
 		}
 	}
+}
+
+if (render_hose_part) {
+	if (hose_translucent)
+		#hose_part();
+	else
+		hose_part();
+}
+
+if (render_outdoor_part) {
+	translate([0, 0, parts_shift])
+		outdoor_part();
 }

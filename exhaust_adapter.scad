@@ -236,8 +236,8 @@ module hose_part() {
 					inner_diameter / 2 - lockring_length);
 			}
 			// the latch pins hover above the stop ring
-			latchpin(-lockviz_delta);
-			latchpin(180 - lockviz_delta);
+			latchpin(0);
+			latchpin(180);
 		}
 	}
 }
@@ -277,5 +277,6 @@ if (render_hose_part) {
 
 if (render_outdoor_part) {
 	translate([0, 0, parts_shift])
-		outdoor_part();
+		rotate([0, 0, lockviz_delta])
+			outdoor_part();
 }

@@ -159,12 +159,12 @@ module latchpin(angle) {
 			difference() {
 				// the pin itself
 				pizzapipe(lockring_length,
-						inner_diameter / 2,
-						inner_diameter / 2 - lockring_depth, 45);
+						inner_diameter / 2 + flappipe_thickness,
+						inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
 				// the lock notch
 				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
 				// FIXME: make some of the geometry common for the pin and the groove
-				translate([inner_diameter / 2 - lockring_depth, 0, 0 -eps /* was lockring_length */]) {
+				translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, 0 -eps /* was lockring_length */]) {
 					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
 				}
 			}
@@ -178,21 +178,21 @@ module lockslider(angle) {
 		// the slider including the end stop
 		difference() {
 			pizzapipe(lockring_groove + lockring_length,
-					inner_diameter / 2,
-					inner_diameter / 2 - lockring_depth, 45);
+					inner_diameter / 2 + flappipe_thickness,
+					inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
 			// cutout a bit higher and offset for the stop
 			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2)]) {
 				translate([0, 0, lockring_length]) { // groove will fit here
 					pizzapipe(lockring_groove + lockring_length,
-					inner_diameter / 2 + eps,
-					inner_diameter / 2 - lockring_depth - eps,
+					inner_diameter / 2 + flappipe_thickness + eps,
+					inner_diameter / 2 + flappipe_thickness - lockring_depth - eps,
 					45 + 2 * eps);
 				}
 			}
 		}
 		// the lock blob
 		rotate([0, 0, 45 - angle_for_circumference(lockblob_distance, inner_diameter / 2)])
-		translate([inner_diameter / 2 - lockring_depth, 0, lockring_length]) {
+		translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, lockring_length]) {
 			cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
 		}
 	}
@@ -218,23 +218,17 @@ module hose_part() {
 					outer_diameter / 2,
 					panel_hole_diameter / 2 + collar_width,
 					inner_diameter / 2);
-			// the bit inside the panel. The inner diameter stays consistent all the way
-			// (FIXME: the outdoor part inside this reduces it though, should be adjusted)
+			// the bit inside the panel. The inner diameter grabs to the outdoor pipe
 			translate([0, 0, pipe_full_length + collar_length])
-				pipe(panel_thickness, panel_hole_diameter / 2, inner_diameter / 2);
+				pipe(panel_thickness,
+					panel_hole_diameter / 2,
+					inner_diameter / 2 + flappipe_thickness);
 		}
 	}
 
 	color("blue") {
+		// note: no stop ring needed - the panel part is larger inside to fit the outdoor pipe
 		translate([0, 0, pipe_full_length + collar_length]) {
-			// the stop ring overlaps with the bevel part and is twice as long as
-			// the lock geometry; it faces the lock slides of the outdoor part
-			translate([0, 0, -2 * lockring_length - lockring_groove_clearance / 2]) {
-				pipe_inner_bevel(2 * lockring_length,
-					inner_diameter / 2,
-					inner_diameter / 2,
-					inner_diameter / 2 - lockring_length);
-			}
 			// the latch pins hover above the stop ring
 			latchpin(0);
 			latchpin(180);
@@ -248,16 +242,14 @@ module outdoor_part() {
 		if (show_body) {
 			color("green") {
 				difference() {
-					// the major body (FIXME: inner diameter not consistent;
-					// fix it and the stop ring will be easier to print too because it will be just a step)
 					pipe(flappipe_length,
-						inner_diameter / 2,
-						inner_diameter / 2 - flappipe_thickness);
+						inner_diameter / 2 + flappipe_thickness,
+						inner_diameter / 2);
 					// cut out a bit for the lock mechanism
 					translate([0, 0, -eps])
 						pipe(lockring_length + lockring_groove + eps,
-								inner_diameter / 2 + eps,
-								inner_diameter / 2 - lockring_depth);
+								inner_diameter / 2 + flappipe_thickness + eps,
+								inner_diameter / 2 + flappipe_thickness - lockring_depth);
 				}
 			}
 		}

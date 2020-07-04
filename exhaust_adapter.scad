@@ -147,7 +147,7 @@ module lock_notch_receptable() {
 		}
 		translate([0, 0, -eps]) {
 			// the ease bit measured from the floor of the pipe
-			cube([inner_diameter / 2 + lock_tooth_ease, tooth_width, tooth_height]);
+			cube([inner_diameter / 2 + lock_tooth_ease + eps, tooth_width, tooth_height]);
 		}
 	}
 }
@@ -164,7 +164,7 @@ module latchpin(angle) {
 				// the lock notch
 				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
 				// FIXME: make some of the geometry common for the pin and the groove
-				translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, 0 -eps /* was lockring_length */]) {
+				translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, 0]) {
 					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
 				}
 			}
@@ -247,7 +247,7 @@ module outdoor_part() {
 						inner_diameter / 2);
 					// cut out a bit for the lock mechanism
 					translate([0, 0, -eps])
-						pipe(lockring_length + lockring_groove + eps,
+						pipe(lockring_length + lockring_groove + 2 * eps,
 								inner_diameter / 2 + flappipe_thickness + eps,
 								inner_diameter / 2 + flappipe_thickness - lockring_depth);
 				}

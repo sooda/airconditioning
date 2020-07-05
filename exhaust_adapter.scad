@@ -10,6 +10,8 @@ hose_translucent = true;
 render_outdoor_part = true;
 // render the full pipe, turn off to see the lock parts
 show_body = true;
+// model the tooth notch receptable as cylinder geometry, not cube
+accurate_tooth = false;
 
 // measurements of the existing hose attachment:
 
@@ -92,27 +94,27 @@ inf = 1000;
 // cylinder minus inner cylinder
 module pipe(h, outer_r, inner_r) {
 	difference() {
-		cylinder(h=h, r=outer_r, center=false, $fn=360);
+		cylinder(h=h, r=outer_r, $fn=180);
 		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
+			cylinder(h=h+2*eps, r=inner_r, $fn=180);
 	}
 }
 
 // cone minus inner cylinder
 module pipe_outer_bevel(h, outer_r1, outer_r2, inner_r) {
 	difference() {
-		cylinder(h=h, r1=outer_r1, r2=outer_r2, center=false, $fn=360);
+		cylinder(h=h, r1=outer_r1, r2=outer_r2, $fn=180);
 		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r=inner_r, center=false, $fn=360);
+			cylinder(h=h+2*eps, r=inner_r, $fn=180);
 	}
 }
 
 // cylinder minus inner cone
 module pipe_inner_bevel(h, outer_r, inner_r1, inner_r2) {
 	difference() {
-		cylinder(h=h, r=outer_r, center=false, $fn=360);
+		cylinder(h=h, r=outer_r, $fn=180);
 		translate([0, 0, -eps])
-			cylinder(h=h+2*eps, r1=inner_r1, r2=inner_r2, center=false, $fn=360);
+			cylinder(h=h+2*eps, r1=inner_r1, r2=inner_r2, $fn=180);
 	}
 }
 
@@ -139,20 +141,62 @@ module pizzapipe(h, outer_r, inner_r, angle) {
 	}
 }
 
+module pizzaslice(h, r, angle) {
+	intersection() {
+		cylinder(h=h, r=r, $fn=180);
+		pizzamask(angle);
+	}
+}
+
 // for matching pizza slice angles with mm dimensions
 // a/360 * 2*pi*r = s
 function angle_for_circumference(s, r) = 180 / PI * s / r;
 
 // a positive geometry to reduce from the indoor pipe body
 module lock_notch_receptable() {
-	translate([0, -tooth_width / 2, 0]) {
-		translate([0, 0, lock_tooth_notch_depth]) {
-			// the hole bit
-			cube([outer_diameter / 2 + eps, tooth_width, tooth_height]);
+	if(!accurate_tooth) {
+		// fast mode
+		translate([0, -tooth_width / 2, 0]) {
+			translate([0, 0, lock_tooth_notch_depth]) {
+				// the hole bit
+				cube([outer_diameter / 2 + eps, tooth_width, tooth_height]);
+			}
+			translate([0, 0, -eps]) {
+				// the ease bit measured from the floor of the pipe
+				cube([inner_diameter / 2 + lock_tooth_ease + eps, tooth_width, tooth_height]);
+			}
 		}
-		translate([0, 0, -eps]) {
+	} else {
+		// this way makes the preview extremely slow, and buggy depending on the view angle and the
+		// below choices, or makes the whole design disappear. The render will be fine though. I'll
+		// debug why some day. Might be a bug/feature with the huge boxes in the pizza pipe.
+		// Swap the inner true to false to use pizza pipes and the whole preview vanishes.
+
+		if (true) translate([0, 0, lock_tooth_notch_depth]) {
+			// the hole bit
+			if (true) {
+				pizzaslice(tooth_height,
+					outer_diameter / 2 + eps,
+					angle_for_circumference(tooth_width, inner_diameter / 2));
+			} else {
+				pizzapipe(tooth_height,
+					outer_diameter / 2 + eps,
+					inner_diameter / 2 - eps,
+					angle_for_circumference(tooth_width, inner_diameter / 2));
+			}
+		}
+		if (true) translate([0, 0, -eps]) {
 			// the ease bit measured from the floor of the pipe
-			cube([inner_diameter / 2 + lock_tooth_ease + eps, tooth_width, tooth_height]);
+			if (true) {
+				pizzaslice(lock_tooth_notch_depth + 2*eps,
+					inner_diameter / 2 + lock_tooth_ease,
+					angle_for_circumference(tooth_width, inner_diameter / 2));
+			} else {
+				pizzapipe(lock_tooth_notch_depth + 2*eps,
+					inner_diameter / 2 + lock_tooth_ease,
+					inner_diameter / 2 - eps,
+					angle_for_circumference(tooth_width, inner_diameter / 2));
+			}
 		}
 	}
 }
@@ -209,7 +253,8 @@ module lockslider(angle) {
 			}
 		}
 		// the lock blob
-		rotate([0, 0, lockring_length_angle - angle_for_circumference(lockblob_distance, inner_diameter / 2)]) {
+		rotate([0, 0, lockring_length_angle
+				- angle_for_circumference(lockblob_distance, inner_diameter / 2)]) {
 			translate([flappipe_outer_diameter / 2 - lockring_depth, 0, lockring_length]) {
 				cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
 			}
@@ -220,10 +265,10 @@ module lockslider(angle) {
 module hose_part() {
 	if (show_body) {
 		color("yellow") {
+			// Change this difference to union to debug the slow rendering
 			difference() {
 				pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
 				union() {
-					// TODO: use the pizza cut for these
 					lock_notch_receptable();
 					rotate([0, 0, 360/3])
 						lock_notch_receptable();

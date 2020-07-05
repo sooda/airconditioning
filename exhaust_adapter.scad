@@ -268,6 +268,7 @@ module hose_part() {
 			// Change this difference to union to debug the slow rendering
 			difference() {
 				pipe(pipe_full_length, outer_diameter / 2, inner_diameter / 2);
+				render()
 				union() {
 					lock_notch_receptable();
 					rotate([0, 0, 360/3])

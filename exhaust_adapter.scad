@@ -44,6 +44,7 @@ collar_width = 7;
 // the collar bit aesthetic length between outer_diameter and panel_hole_diameter; like this for symmetry
 collar_length = outer_length - pipe_overlap;
 // before the collar, goes around the pipe_overlap bit with inner_diameter
+// XXX: this is a bad name
 pipe_full_length = pipe_overlap;//outer_length - collar_length;
 
 // the "outdoor" side part that will have flaps of some sort to block rain:
@@ -54,6 +55,8 @@ flappipe_joinlength = 2;
 flappipe_length = panel_thickness + flappipe_joinlength;
 // doesn't need to be very heavy, just smooth. XXX: quantize according to your 3d printer nozzle
 flappipe_thickness = 2;
+// the inner diameter is consistent throughout the parts
+flappipe_outer_diameter = inner_diameter + 2 * flappipe_thickness;
 
 // the two pipes lock together slightly to ensure consistency:
 
@@ -163,12 +166,12 @@ module latchpin(angle) {
 				// geometry? Again, it would be nice to be able to constraint this on exactly the
 				// inner surface, but here we are with floating point math.
 				pizzapipe(lockring_length,
-						inner_diameter / 2 + flappipe_thickness + eps,
-						inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
+						flappipe_outer_diameter / 2 + eps,
+						flappipe_outer_diameter / 2 - lockring_depth, 45);
 				// the lock notch
 				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
 				// FIXME: make some of the geometry common for the pin and the groove
-				translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, 0]) {
+				translate([flappipe_outer_diameter / 2 - lockring_depth, 0, 0]) {
 					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
 				}
 			}
@@ -184,21 +187,21 @@ module lockslider(angle) {
 		difference() {
 			// yes, +eps. This ensures the surface goes inside the other
 			pizzapipe(lockring_groove + lockring_length + eps,
-					inner_diameter / 2 + flappipe_thickness,
-					inner_diameter / 2 + flappipe_thickness - lockring_depth, 45);
+					flappipe_outer_diameter / 2,
+					flappipe_outer_diameter / 2 - lockring_depth, 45);
 			// cutout a bit higher and offset for the stop
 			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2) - eps]) {
 				translate([0, 0, lockring_length]) { // groove will fit here
 					pizzapipe(lockring_groove + lockring_length,
-					inner_diameter / 2 + flappipe_thickness + eps,
-					inner_diameter / 2 + flappipe_thickness - lockring_depth - eps,
+					flappipe_outer_diameter / 2 + eps,
+					flappipe_outer_diameter / 2 - lockring_depth - eps,
 					45 + 2*eps);
 				}
 			}
 		}
 		// the lock blob
 		rotate([0, 0, 45 - angle_for_circumference(lockblob_distance, inner_diameter / 2)])
-		translate([inner_diameter / 2 + flappipe_thickness - lockring_depth, 0, lockring_length]) {
+		translate([flappipe_outer_diameter / 2 - lockring_depth, 0, lockring_length]) {
 			cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
 		}
 	}
@@ -229,7 +232,7 @@ module hose_part() {
 			translate([0, 0, pipe_full_length + collar_length - eps])
 				pipe(eps + panel_thickness,
 					panel_hole_diameter / 2,
-					inner_diameter / 2 + flappipe_thickness);
+					flappipe_outer_diameter / 2);
 		}
 	}
 
@@ -250,13 +253,13 @@ module outdoor_part() {
 			color("green") {
 				difference() {
 					pipe(flappipe_length,
-						inner_diameter / 2 + flappipe_thickness,
+						flappipe_outer_diameter / 2,
 						inner_diameter / 2);
 					// cut out a bit for the lock mechanism
 					translate([0, 0, -eps])
 						pipe(lockring_length + lockring_groove + 2*eps,
-								inner_diameter / 2 + flappipe_thickness + eps,
-								inner_diameter / 2 + flappipe_thickness - lockring_depth);
+								flappipe_outer_diameter / 2 + eps,
+								flappipe_outer_diameter / 2 - lockring_depth);
 				}
 			}
 		}

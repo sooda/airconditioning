@@ -68,10 +68,12 @@ lockring_length = 2;
 lockring_groove_clearance = 0.2;
 // consistent dimensions just with slop
 lockring_groove = lockring_length + lockring_groove_clearance;
-// how far the knob to snap against is from the end of the lock groove
+// how far the snap knob is from the end of the latch head, measured along the inner_diameter surface
 lockblob_distance = 5;
 // multiplier for how much bigger the notch is than the blob
 lockblob_clearance = 1.05;
+// how long the lock mechanism is around the cylinder surface
+lockring_length_angle = 45;
 
 // debug and dev stuff:
 
@@ -158,6 +160,7 @@ module lock_notch_receptable() {
 // the indoor side of the pipe locking mechanism
 module latchpin(angle) {
 	translate([0, 0, lockring_length + lockring_groove_clearance / 2]) {
+		// rotate away from the stop bit
 		rotate([0, 0, angle - angle_for_circumference(lockring_length, inner_diameter / 2)]) {
 			difference() {
 				// the pin itself. The added epsilon gets rid of flickering that supposedly comes
@@ -167,12 +170,17 @@ module latchpin(angle) {
 				// inner surface, but here we are with floating point math.
 				pizzapipe(lockring_length,
 						flappipe_outer_diameter / 2 + eps,
-						flappipe_outer_diameter / 2 - lockring_depth, 45);
-				// the lock notch
-				rotate([0, 0, 45 - angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)])
-				// FIXME: make some of the geometry common for the pin and the groove
-				translate([flappipe_outer_diameter / 2 - lockring_depth, 0, 0]) {
-					cylinder(h=lockring_groove, r=lockblob_clearance * lockring_depth / 2, $fs=0.1);
+						flappipe_outer_diameter / 2 - lockring_depth,
+						lockring_length_angle);
+				// the lock notch cut away from the pin
+				rotate([0, 0, lockring_length_angle
+						- angle_for_circumference(lockblob_distance - lockring_length, inner_diameter / 2)]) {
+					// FIXME: make some of the geometry common for the pin and the groove
+					translate([flappipe_outer_diameter / 2 - lockring_depth, 0, -eps]) {
+						cylinder(h=lockring_length + 2*eps,
+							r=lockblob_clearance * lockring_depth / 2,
+							$fs=0.1);
+					}
 				}
 			}
 		}
@@ -186,23 +194,25 @@ module lockslider(angle) {
 		// the slider including the end stop
 		difference() {
 			// yes, +eps. This ensures the surface goes inside the other
-			pizzapipe(lockring_groove + lockring_length + eps,
+			pizzapipe(lockring_length + lockring_groove + eps,
 					flappipe_outer_diameter / 2,
-					flappipe_outer_diameter / 2 - lockring_depth, 45);
-			// cutout a bit higher and offset for the stop
-			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2) - eps]) {
-				translate([0, 0, lockring_length]) { // groove will fit here
-					pizzapipe(lockring_groove + lockring_length,
-					flappipe_outer_diameter / 2 + eps,
-					flappipe_outer_diameter / 2 - lockring_depth - eps,
-					45 + 2*eps);
+					flappipe_outer_diameter / 2 - lockring_depth,
+					lockring_length_angle);
+			// the pin groove is a bit higher and offset for the stop
+			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2)]) {
+				translate([0, 0, lockring_length]) {
+					pizzapipe(lockring_groove + 2 * eps,
+						flappipe_outer_diameter / 2 + eps,
+						flappipe_outer_diameter / 2 - lockring_depth - eps,
+						lockring_length_angle);
 				}
 			}
 		}
 		// the lock blob
-		rotate([0, 0, 45 - angle_for_circumference(lockblob_distance, inner_diameter / 2)])
-		translate([flappipe_outer_diameter / 2 - lockring_depth, 0, lockring_length]) {
-			cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
+		rotate([0, 0, lockring_length_angle - angle_for_circumference(lockblob_distance, inner_diameter / 2)]) {
+			translate([flappipe_outer_diameter / 2 - lockring_depth, 0, lockring_length]) {
+				cylinder(h=lockring_groove, r=lockring_depth / 2, $fs=0.1);
+			}
 		}
 	}
 }

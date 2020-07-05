@@ -135,6 +135,7 @@ module pizzamask(angle) {
 // a difference of two of these may glitch in the outer face no matter how big epsilon,
 // depending on your gpu driver version?? (in preview mode only)
 module pizzapipe(h, outer_r, inner_r, angle) {
+	render() // avoid exponential growth
 	intersection() {
 		pipe(h, outer_r, inner_r);
 		pizzamask(angle);
@@ -142,6 +143,7 @@ module pizzapipe(h, outer_r, inner_r, angle) {
 }
 
 module pizzaslice(h, r, angle) {
+	render() // avoid exponential growth
 	intersection() {
 		cylinder(h=h, r=r, $fn=180);
 		pizzamask(angle);
@@ -240,14 +242,14 @@ module lockslider(angle) {
 			// yes, +eps. This ensures the surface goes inside the other
 			pizzapipe(lockring_length + lockring_groove + eps,
 					flappipe_outer_diameter / 2,
-					flappipe_outer_diameter / 2 - lockring_depth,
+					flappipe_outer_diameter / 2 - lockring_depth - eps,
 					lockring_length_angle);
 			// the pin groove is a bit higher and offset for the stop
 			rotate([0, 0, -angle_for_circumference(lockring_length, inner_diameter / 2)]) {
 				translate([0, 0, lockring_length]) {
 					pizzapipe(lockring_groove + 2 * eps,
 						flappipe_outer_diameter / 2 + eps,
-						flappipe_outer_diameter / 2 - lockring_depth - eps,
+						flappipe_outer_diameter / 2 - lockring_depth - 2 * eps,
 						lockring_length_angle);
 				}
 			}

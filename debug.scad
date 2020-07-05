@@ -3,7 +3,7 @@ eps = 0.01;
 // Big enough to cover the geometry. The magnitude doesn't affect the count.
 inf = 1000;
 
-extruded = true;
+extruded = false;
 
 // Cylinder minus inner cylinder. This doesn't seem to be the problem (i.e.,
 // it's as hard with just a cylinder); this is easier to visualize with the
@@ -42,6 +42,7 @@ module pizzamask(angle) {
 
 // a whole sector
 module pizzaslice(h, r, angle) {
+	render()
 	intersection() {
 		cylinder(h=h, r=r, $fa=10);
 		pizzamask(angle);
@@ -52,9 +53,9 @@ module holed_pizzacrust() {
 	//union() { // visualize the subtraction elements
 	difference() { // reproduce the problem
 		pipe(10, 50, 40);
-		// extruded: 0:0 -> 16, 0:1 -> 96, 0:2 -> 512, 0:3 -> 2560
-		// !extruded: 0:0 -> 36, 0:1 -> 486, 0:2 -> 5832
-		for (pos=[0:2]) {
+		// extruded: 0:0 -> 16, 0:1 -> 96, 0:2 -> 512, 0:3 -> 2560, 0:4 -> over 40000
+		// !extruded: 0:0 -> 36, 0:1 -> 486, 0:2 -> 5832, 0:3 -> over 40000
+		for (pos=[0:3]) {
 			rotate([0, 0, pos*360/4]) {
 				translate([0, 0, 1])
 					pizzaslice(2, 50+eps, 15);

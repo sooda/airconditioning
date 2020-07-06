@@ -11,7 +11,7 @@ render_outdoor_part = true;
 // render the full pipe, turn off to see the lock parts
 show_body = true;
 // model the tooth notch receptable as cylinder geometry, not cube
-accurate_tooth = false;
+accurate_tooth = true;
 
 // measurements of the existing hose attachment:
 
@@ -56,14 +56,14 @@ flappipe_joinlength = 2;
 // this goes inside the hose attachment adapter
 flappipe_length = panel_thickness + flappipe_joinlength;
 // doesn't need to be very heavy, just smooth. XXX: quantize according to your 3d printer nozzle
-flappipe_thickness = 2;
+flappipe_thickness = 4;
 // the inner diameter is consistent throughout the parts
 flappipe_outer_diameter = inner_diameter + 2 * flappipe_thickness;
 
 // the two pipes lock together slightly to ensure consistency:
 
 // groove depth into the flap pipe. XXX: quantize according to your 3d printer nozzle
-lockring_depth = 1;
+lockring_depth = 2;
 // the two parts will rotate and clip on together; this is measured against the indoor end of the outdoor pipe
 lockring_length = 2;
 // length and some extra slop; XXX: quantize
@@ -71,7 +71,7 @@ lockring_groove_clearance = 0.2;
 // consistent dimensions just with slop
 lockring_groove = lockring_length + lockring_groove_clearance;
 // how far the snap knob is from the end of the latch head, measured along the inner_diameter surface
-lockblob_distance = 5;
+lockblob_distance = 8;
 // multiplier for how much bigger the notch is than the blob
 lockblob_clearance = 1.05;
 // how long the lock mechanism is around the cylinder surface

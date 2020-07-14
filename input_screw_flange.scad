@@ -100,7 +100,7 @@ module helix() {
 	translate([0, 0, length - screw_length - screw_thickness]) {
 		rotate([0, -90, 0]) {
 			screw_extrude(cross_section,
-				inner_diameter / 2 - screw_depth + 0.0, // XXX: beware of gaps
+				inner_diameter / 2 - screw_depth + 0.05, // XXX: beware of gaps, depends on face count
 				screw_length, screw_lead, 360/2);
 		}
 	}
@@ -123,7 +123,7 @@ module body() {
 		}
 	}
 	// a concave fillet between the flange and the pipe body
-	translate([0, 0, thickness]) {
+	translate([0, 0, thickness - eps]) {
 		rotate_extrude($fa=2) {
 			translate([outer_diameter / 2, 0, 0]) {
 				difference() {

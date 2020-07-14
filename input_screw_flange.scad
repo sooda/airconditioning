@@ -108,12 +108,12 @@ module body() {
 		pipe(length, outer_diameter / 2, inner_diameter / 2);
 	// a concave fillet between the flange and the pipe body
 	translate([0, 0, thickness]) {
-		rotate_extrude($fa=5) {
+		rotate_extrude($fa=2) {
 			translate([outer_diameter / 2, 0, 0]) {
 				difference() {
 					square([flange_ease_radius, flange_ease_radius]);
 					translate([flange_ease_radius, flange_ease_radius])
-						circle(flange_ease_radius, $fn=90);
+						circle(flange_ease_radius, $fn=60);
 				}
 			}
 		}

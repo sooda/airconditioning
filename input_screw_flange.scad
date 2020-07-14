@@ -59,6 +59,8 @@ function rz(a) = [
 	[0, sin(a),  cos(a)]
 ];
 
+// face_vertices shall be counterclockwise, as it'll be the underside: when
+// looking from the top, this grows initially towards the viewer.
 module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
 	face_size = len(face_vertices);
 	revolutions = length / lead;
@@ -73,7 +75,7 @@ module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
 	];
 
 	front_face = [[for (i=[0:face_size-1]) i]];
-	back_face = [[for (i=[len(pts) - face_size:len(pts)-1]) i]];
+	back_face = [[for (i=[0:face_size-1]) len(pts) - 1 - i]];
 	inner_faces = [
 		for (begin_slice = [0:segments-2])
 			for (begin_vert = [0:face_size-1]) [
@@ -88,7 +90,7 @@ module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
 }
 
 module helix() {
-	// clockwise
+	// ccw
 	cross_section = [
 		[(screw_thickness_body - screw_thickness) / 2, 0],
 		[screw_thickness - (screw_thickness_body - screw_thickness) / 2, 0],

@@ -25,6 +25,7 @@ screw_thickness_body = 2;
 screw_lead = 3;
 // Three shall be the number thou shalt count, and the number of the counting shall be three.
 screw_revolutions = 3;
+
 screw_length = screw_lead * screw_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
@@ -90,14 +91,20 @@ module helix() {
 		[screw_thickness, screw_depth],
 		[0, screw_depth],
 	];
-	screw_extrude(cross_section, inner_diameter / 2, screw_length, screw_lead, 360/5);
+	translate([0, 0, length - screw_length - screw_thickness]) {
+		rotate([0, -90, 0]) {
+			screw_extrude(cross_section,
+				inner_diameter / 2 - screw_depth + 0.0, // XXX: beware of gaps
+				screw_length, screw_lead, 360/2);
+		}
+	}
 }
 
 module body() {
 	// flange (TODO: a few screw holes)
-	#pipe(thickness, outer_diameter / 2 + flange_expansion, inner_diameter / 2 - eps);
+	pipe(thickness, outer_diameter / 2 + flange_expansion, inner_diameter / 2 - eps);
 	// main body
-	#translate([0, 0, eps])
+	translate([0, 0, eps])
 		pipe(length, outer_diameter / 2, inner_diameter / 2);
 	// a concave fillet between the flange and the pipe body
 	translate([0, 0, thickness]) {
@@ -114,7 +121,7 @@ module body() {
 }
 
 module flanged_screw() {
-	//body();
+	body();
 	helix();
 }
 

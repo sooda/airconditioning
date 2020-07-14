@@ -33,7 +33,7 @@ screw_revolutions = 3;
 screw_length = screw_lead * screw_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
-outer_diameter = hose_outer_diameter + 2 * thickness;
+outer_diameter = inner_diameter + 2 * thickness;
 
 // fight the z with 1% the feature size
 eps = 0.01;

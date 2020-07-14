@@ -24,7 +24,8 @@ screw_thickness_body = 2;
 // spacing between teeth
 screw_lead = 3;
 // Three shall be the number thou shalt count, and the number of the counting shall be three.
-screw_rotations = 3;
+screw_revolutions = 3;
+screw_length = screw_lead * screw_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
 outer_diameter = hose_outer_diameter + 2 * thickness;
@@ -37,22 +38,15 @@ inf = 1000;
 include <utils.scad>
 
 // along x axis, right hand rule
-function screw_track_point(r, lead, x) = [
-	x/8.90123,
-	r * cos(x),
-	r * sin(x),
+function screw_track_point(r, lead, a) = [
+	a / 360 * lead,
+	r * cos(a),
+	r * sin(a),
 ];
 
 function screw_track(r, lead, xs) = [
 	for (x=xs) screw_track_point(r, lead, x)
 ];
-
-function rot(v, a) = [
-	cos(a) * v[0] - sin(a) * v[1],
-	sin(a) * v[0] + cos(a) * v[1]
-];
-
-function transformq(p, i) = p + [0, 0, i];
 
 function rz(a) = [
 	[1,      0,       0],
@@ -60,28 +54,23 @@ function rz(a) = [
 	[0, sin(a),  cos(a)]
 ];
 
-module screw_extrude(face, r, n) {
-	face_size = len(face);
-	track = screw_track(10, 360, [0:n-1]);
-	/*
+module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
+	face_size = len(face_vertices);
+	revolutions = length / lead;
+	// the track with n volume sections has n+1 face segments
+	segments = rev_resolution * revolutions + 1;
+	//track = screw_track(10, 360, [0:n-1]);
 	pts = [
-		for (trackpoint=track)
-			for (p = face)
-				[rot(p, 0)[0], rot(p, 0)[1], 0] + trackpoint
-	];
-	*/
-	pts = [
-		for (i=[0:n-1])
-			for (p = face)
-				rz(i) * [p[0], p[1], 0] + screw_track_point(10, 360, i)
+		for (i=[0:segments-1])
+			for (p = face_vertices)
+				rz(i / rev_resolution * 360) * [p[0], p[1], 0]
+						+ screw_track_point(r, lead, i / rev_resolution * 360)
 	];
 
-	//front_face = [0:face_size-1];
-	//back_face = [len(pts)-1 - face_size:len(pts)-1];
 	front_face = [[for (i=[0:face_size-1]) i]];
 	back_face = [[for (i=[len(pts) - face_size:len(pts)-1]) i]];
 	inner_faces = [
-		for (begin_slice = [0:n-2])
+		for (begin_slice = [0:segments-2])
 			for (begin_vert = [0:face_size-1]) [
 				 begin_slice      * face_size + begin_vert,
 				(begin_slice + 1) * face_size + begin_vert,
@@ -101,7 +90,7 @@ module helix() {
 		[screw_thickness, screw_depth],
 		[0, screw_depth],
 	];
-	screw_extrude(cross_section, inner_diameter / 2, 90);
+	screw_extrude(cross_section, inner_diameter / 2, screw_length, screw_lead, 360/5);
 }
 
 module body() {

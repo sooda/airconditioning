@@ -11,9 +11,13 @@ thickness = 2;
 // this much overlap with the hose
 length = 30;
 // the flange where this is attached to something
-flange_expansion = 10;
+flange_expansion = 11;
 // a fillet between the pipe and the flange
 flange_ease_radius = 3;
+// the flanged bit is screwed to an air box
+mounting_hole_diameter = 4.2;
+// Five is right out.
+mounting_hole_count = 3;
 
 // keep this less than ~17mm
 screw_depth = 8;
@@ -101,11 +105,21 @@ module helix() {
 }
 
 module body() {
-	// flange (TODO: a few screw holes)
-	pipe(thickness, outer_diameter / 2 + flange_expansion, inner_diameter / 2 - eps);
 	// main body
 	translate([0, 0, eps])
 		pipe(length, outer_diameter / 2, inner_diameter / 2);
+	difference() {
+		// flange
+		pipe(thickness, outer_diameter / 2 + flange_expansion, inner_diameter / 2 - eps);
+		// mount holes
+		translate([0, 0, -eps]) {
+			for (angle=[0:360/mounting_hole_count:360]) {
+				rotate([0, 0, angle])
+					translate([outer_diameter / 2 + flange_expansion / 2, 0, 0])
+					cylinder(h=inf, r=mounting_hole_diameter / 2, $fn=90);
+			}
+		}
+	}
 	// a concave fillet between the flange and the pipe body
 	translate([0, 0, thickness]) {
 		rotate_extrude($fa=2) {

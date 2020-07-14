@@ -36,12 +36,72 @@ inf = 1000;
 
 include <utils.scad>
 
+// along x axis, right hand rule
+function screw_track_point(r, lead, x) = [
+	x/8.90123,
+	r * cos(x),
+	r * sin(x),
+];
+
+function screw_track(r, lead, xs) = [
+	for (x=xs) screw_track_point(r, lead, x)
+];
+
+function rot(v, a) = [
+	cos(a) * v[0] - sin(a) * v[1],
+	sin(a) * v[0] + cos(a) * v[1]
+];
+
+function transformq(p, i) = p + [0, 0, i];
+
+function rz(a) = [
+	[1,      0,       0],
+	[0, cos(a), -sin(a)],
+	[0, sin(a),  cos(a)]
+];
+
+module screw_extrude(face, r, n) {
+	face_size = len(face);
+	track = screw_track(10, 360, [0:n-1]);
+	/*
+	pts = [
+		for (trackpoint=track)
+			for (p = face)
+				[rot(p, 0)[0], rot(p, 0)[1], 0] + trackpoint
+	];
+	*/
+	pts = [
+		for (i=[0:n-1])
+			for (p = face)
+				rz(i) * [p[0], p[1], 0] + screw_track_point(10, 360, i)
+	];
+
+	//front_face = [0:face_size-1];
+	//back_face = [len(pts)-1 - face_size:len(pts)-1];
+	front_face = [[for (i=[0:face_size-1]) i]];
+	back_face = [[for (i=[len(pts) - face_size:len(pts)-1]) i]];
+	inner_faces = [
+		for (begin_slice = [0:n-2])
+			for (begin_vert = [0:face_size-1]) [
+				 begin_slice      * face_size + begin_vert,
+				(begin_slice + 1) * face_size + begin_vert,
+				(begin_slice + 1) * face_size + (begin_vert + 1) % face_size,
+				 begin_slice      * face_size + (begin_vert + 1) % face_size
+			]
+	];
+	faces = concat(front_face, inner_faces, back_face);
+	polyhedron(pts, faces);
+}
+
 module helix() {
-	linear_extrude(height=screw_rotations * screw_lead,
-			twist=-360 * screw_rotations,
-			slices=50 * screw_rotations)
-		translate([hose_outer_diameter / 2 - screw_depth, 0, 0])
-			square([screw_depth + eps, screw_thickness]); // FIXME: thickness doesn't work like this
+	// clockwise
+	cross_section = [
+		[(screw_thickness_body - screw_thickness) / 2, 0],
+		[screw_thickness - (screw_thickness_body - screw_thickness) / 2, 0],
+		[screw_thickness, screw_depth],
+		[0, screw_depth],
+	];
+	screw_extrude(cross_section, inner_diameter / 2, 90);
 }
 
 module body() {
@@ -65,8 +125,7 @@ module body() {
 }
 
 module flanged_screw() {
-	body();
-	translate([0, 0, 40])
+	//body();
 	helix();
 }
 

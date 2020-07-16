@@ -4,29 +4,30 @@
 // outmost hose dimension
 hose_outer_diameter = 152;
 // gap between the hose and the inner face of the pipe
-thread_tolerance = 1;
+thread_tolerance = 2;
 // general rigidity of the structure
 thickness = 2;
 
 // this much overlap with the hose
 length = 30;
 // the flange where this is attached to something
-flange_expansion = 11;
+flange_expansion = 13;
 // a fillet between the pipe and the flange
 flange_ease_radius = 3;
 // the flanged bit is screwed to an air box
-mounting_hole_diameter = 4.2;
+mounting_hole_diameter = 4.4;
 // Five is right out.
-mounting_hole_count = 3;
+mounting_hole_count = 6;
 
 // keep this less than ~17mm
 screw_depth = 8;
 // teeth face on the visible (hose) side
 screw_thickness_side = 1.5;
 // teeth face on the pipe side
-screw_thickness_body = 2;
+screw_thickness_body = 3;
 // spacing between teeth
-screw_lead = 3;
+screw_spacing = 4;
+screw_lead = screw_thickness_body + screw_spacing;
 // Three shall be the number thou shalt count, and the number of the counting shall be three.
 screw_revolutions = 3;
 
@@ -123,7 +124,9 @@ module body() {
 		translate([0, 0, -eps]) {
 			for (angle=[0:360/mounting_hole_count:360]) {
 				rotate([0, 0, angle])
-					translate([outer_diameter / 2 + flange_expansion / 2, 0, 0])
+					translate([outer_diameter / 2 +
+							flange_ease_radius +
+							(flange_expansion - flange_ease_radius) / 2, 0, 0])
 					cylinder(h=inf, r=mounting_hole_diameter / 2, $fn=90);
 			}
 		}

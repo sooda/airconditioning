@@ -1,7 +1,3 @@
-// this attaches to the window end of the exhaust hose of a chinanordica
-// "9000BTU" A007G-09C portable AC unit
-
-// FIXME: use proper cylinder sectors instead of the cube simplification?
 // the connector adapter
 render_hose_part = true;
 // use this to check alignment

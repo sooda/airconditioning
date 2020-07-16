@@ -21,8 +21,8 @@ mounting_hole_count = 3;
 
 // keep this less than ~17mm
 screw_depth = 8;
-// teeth face on the visible side
-screw_thickness = 1.5;
+// teeth face on the visible (hose) side
+screw_thickness_side = 1.5;
 // teeth face on the pipe side
 screw_thickness_body = 2;
 // spacing between teeth
@@ -90,14 +90,20 @@ module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
 }
 
 module helix() {
+	//     body
+	//    ______
+	// ^ \      /
+	// y  \____/
+	// |   side
+	// +--x> (not to scale)
 	// ccw
 	cross_section = [
-		[(screw_thickness_body - screw_thickness) / 2, 0],
-		[screw_thickness - (screw_thickness_body - screw_thickness) / 2, 0],
-		[screw_thickness, screw_depth],
+		[(screw_thickness_body - screw_thickness_side) / 2, 0],
+		[(screw_thickness_body - screw_thickness_side) / 2 + screw_thickness_side, 0],
+		[screw_thickness_body, screw_depth],
 		[0, screw_depth],
 	];
-	translate([0, 0, length - screw_length - screw_thickness]) {
+	translate([0, 0, length - screw_length - screw_thickness_body]) {
 		rotate([0, -90, 0]) {
 			screw_extrude(cross_section,
 				inner_diameter / 2 - screw_depth + 0.05, // XXX: beware of gaps, depends on face count

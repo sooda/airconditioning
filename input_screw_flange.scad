@@ -21,11 +21,11 @@ mounting_hole_count = 6;
 
 // keep this less than ~17mm
 screw_depth = 8;
-// teeth face on the visible (hose) side
+// tooth face on the visible (hose) side. A trapezoidal cross section may cause your slicer to generate a more complex thread surface that will slide easier but is a pain to clean up from the supports.
 screw_thickness_side = 1.5;
-// teeth face on the pipe side
+// tooth face on the pipe side. This is just thread and not a proper screw, but whatever. The pipe screws in.
 screw_thickness_body = 3;
-// spacing between teeth
+// spacing between teeth to contribute to the lead aka pitch
 screw_spacing = 4;
 screw_lead = screw_thickness_body + screw_spacing;
 // Three shall be the number thou shalt count, and the number of the counting shall be three.

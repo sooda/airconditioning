@@ -19,6 +19,9 @@ mounting_hole_diameter = 4.4;
 // Five is right out.
 mounting_hole_count = 6;
 
+// FIXME: the thread cuts off in a straight angle at the end where the hose is screwed on. It gets
+// easily stuck on the hose plastic, so a tapered cut on the beginning would be nice.
+
 // keep this less than ~17mm
 screw_depth = 8;
 // tooth face on the visible (hose) side. A trapezoidal cross section may cause your slicer to generate a more complex thread surface that will slide easier but is a pain to clean up from the supports.

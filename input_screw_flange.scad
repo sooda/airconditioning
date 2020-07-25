@@ -44,53 +44,6 @@ inf = 1000;
 
 include <utils.scad>
 
-// along x axis, right hand rule
-function thread_track_point(r, lead, a) = [
-	a / 360 * lead,
-	r * cos(a),
-	r * sin(a),
-];
-
-function thread_track(r, lead, xs) = [
-	for (x=xs) thread_track_point(r, lead, x)
-];
-
-function rz(a) = [
-	[1,      0,       0],
-	[0, cos(a), -sin(a)],
-	[0, sin(a),  cos(a)]
-];
-
-// face_vertices shall be counterclockwise, as it'll be the underside: when
-// looking from the top, this grows initially towards the viewer.
-module thread_extrude(face_vertices, r, length, lead, rev_resolution) {
-	face_size = len(face_vertices);
-	revolutions = length / lead;
-	// the track with n volume sections has n+1 face segments
-	segments = rev_resolution * revolutions + 1;
-	//track = thread_track(10, 360, [0:n-1]);
-	pts = [
-		for (i=[0:segments-1])
-			for (p = face_vertices)
-				rz(i / rev_resolution * 360) * [p[0], p[1], 0]
-						+ thread_track_point(r, lead, i / rev_resolution * 360)
-	];
-
-	front_face = [[for (i=[0:face_size-1]) i]];
-	back_face = [[for (i=[0:face_size-1]) len(pts) - 1 - i]];
-	inner_faces = [
-		for (begin_slice = [0:segments-2])
-			for (begin_vert = [0:face_size-1]) [
-				 begin_slice      * face_size + begin_vert,
-				(begin_slice + 1) * face_size + begin_vert,
-				(begin_slice + 1) * face_size + (begin_vert + 1) % face_size,
-				 begin_slice      * face_size + (begin_vert + 1) % face_size
-			]
-	];
-	faces = concat(front_face, inner_faces, back_face);
-	polyhedron(pts, faces);
-}
-
 module helix() {
 	//     body
 	//    ______

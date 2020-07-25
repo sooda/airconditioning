@@ -23,18 +23,18 @@ mounting_hole_count = 6;
 // easily stuck on the hose plastic, so a tapered cut on the beginning would be nice.
 
 // keep this less than ~17mm
-screw_depth = 8;
-// tooth face on the visible (hose) side. A trapezoidal cross section may cause your slicer to generate a more complex thread surface that will slide easier but is a pain to clean up from the supports.
-screw_thickness_side = 1.5;
-// tooth face on the pipe side. This is just thread and not a proper screw, but whatever. The pipe screws in.
-screw_thickness_body = 3;
-// spacing between teeth to contribute to the lead aka pitch
-screw_spacing = 4;
-screw_lead = screw_thickness_body + screw_spacing;
+thread_depth = 8;
+// thread face dimension on the visible (hose) side. A trapezoidal cross section may cause your slicer to generate a more complex thread surface that will slide easier but is a pain to clean up from the supports.
+thread_thickness_side = 1.5;
+// thread face dimension on the pipe side
+thread_thickness_body = 3;
+// spacing between facing thread faces to contribute to the lead aka pitch, compare against the hose flex
+thread_spacing = 4;
+thread_lead = thread_thickness_body + thread_spacing;
 // Three shall be the number thou shalt count, and the number of the counting shall be three.
-screw_revolutions = 3;
+thread_revolutions = 3;
 
-screw_length = screw_lead * screw_revolutions;
+thread_length = thread_lead * thread_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
 outer_diameter = inner_diameter + 2 * thickness;
@@ -47,14 +47,14 @@ inf = 1000;
 include <utils.scad>
 
 // along x axis, right hand rule
-function screw_track_point(r, lead, a) = [
+function thread_track_point(r, lead, a) = [
 	a / 360 * lead,
 	r * cos(a),
 	r * sin(a),
 ];
 
-function screw_track(r, lead, xs) = [
-	for (x=xs) screw_track_point(r, lead, x)
+function thread_track(r, lead, xs) = [
+	for (x=xs) thread_track_point(r, lead, x)
 ];
 
 function rz(a) = [
@@ -65,17 +65,17 @@ function rz(a) = [
 
 // face_vertices shall be counterclockwise, as it'll be the underside: when
 // looking from the top, this grows initially towards the viewer.
-module screw_extrude(face_vertices, r, length, lead, rev_resolution) {
+module thread_extrude(face_vertices, r, length, lead, rev_resolution) {
 	face_size = len(face_vertices);
 	revolutions = length / lead;
 	// the track with n volume sections has n+1 face segments
 	segments = rev_resolution * revolutions + 1;
-	//track = screw_track(10, 360, [0:n-1]);
+	//track = thread_track(10, 360, [0:n-1]);
 	pts = [
 		for (i=[0:segments-1])
 			for (p = face_vertices)
 				rz(i / rev_resolution * 360) * [p[0], p[1], 0]
-						+ screw_track_point(r, lead, i / rev_resolution * 360)
+						+ thread_track_point(r, lead, i / rev_resolution * 360)
 	];
 
 	front_face = [[for (i=[0:face_size-1]) i]];
@@ -102,16 +102,16 @@ module helix() {
 	// +--x> (not to scale)
 	// ccw
 	cross_section = [
-		[(screw_thickness_body - screw_thickness_side) / 2, 0],
-		[(screw_thickness_body - screw_thickness_side) / 2 + screw_thickness_side, 0],
-		[screw_thickness_body, screw_depth],
-		[0, screw_depth],
+		[(thread_thickness_body - thread_thickness_side) / 2, 0],
+		[(thread_thickness_body - thread_thickness_side) / 2 + thread_thickness_side, 0],
+		[thread_thickness_body, thread_depth],
+		[0, thread_depth],
 	];
-	translate([0, 0, length - screw_length - screw_thickness_body]) {
+	translate([0, 0, length - thread_length - thread_thickness_body]) {
 		rotate([0, -90, 0]) {
-			screw_extrude(cross_section,
-				inner_diameter / 2 - screw_depth + 0.05, // XXX: beware of gaps, depends on face count
-				screw_length, screw_lead, 360/2);
+			thread_extrude(cross_section,
+				inner_diameter / 2 - thread_depth + 0.05, // XXX: beware of gaps, depends on face count
+				thread_length, thread_lead, 360/2);
 		}
 	}
 }
@@ -148,9 +148,9 @@ module body() {
 	}
 }
 
-module flanged_screw() {
+module flange_nut() {
 	body();
 	helix();
 }
 
-flanged_screw();
+flange_nut();

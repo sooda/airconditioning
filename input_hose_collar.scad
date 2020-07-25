@@ -1,23 +1,31 @@
 // #87-3828 152mm 3m air hose:
 // https://www.biltema.fi/rakentaminen/lvi/ilmanvaihto/ilmanvaihtoletkut/ilmanvaihtoletku-2000031439
 
+// This piece goes directly through the window panel! The two-piece construction on the exhaust hose
+// is just to match and reuse the existing collar on it.
+
+// make the outer body translucent
+debug_threads = true;
+
 // outmost hose dimensions, by chance it's the same as the outer diameter of the exhaust hose collar
 hose_outer_diameter = 152;
 // gap between the hose and the inner face of the pipe
 thread_tolerance = 2;
-// general rigidity of the structure
-thickness = 2;
+// 160 mm matches the other window panel hole and thickness becomes 2 mm
+outer_diameter = 160;
+
+// the outer dimension is more important than this one, although do mind this as well
+thickness = (outer_diameter - hose_outer_diameter) / 2 - thread_tolerance;
 
 // this much overlap with the hose
-length = 30;
-// the flange where this is attached to something
-flange_expansion = 13;
-// a fillet between the pipe and the flange
-flange_ease_radius = 3;
-// the flanged bit is screwed to an air box
-mounting_hole_diameter = 4.4;
-// Five is right out.
-mounting_hole_count = 6;
+visible_length = 30;
+
+// the pipe goes through the panel and an outdoor part aligns with this inner face
+panel_thickness = 30;
+// a flange bit to keep the part close to the panel; "radius" dimension
+collar_width = 7;
+// The collar overlaps with the threaded bit and is this long before reaching the window panel face. Some flat is left for better finger grip
+collar_length = 20;
 
 // keep this less than ~17mm
 thread_depth = 8;
@@ -34,7 +42,6 @@ thread_revolutions = 3;
 thread_length = thread_lead * thread_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
-outer_diameter = inner_diameter + 2 * thickness;
 thread_inner_diameter = inner_diameter - 2 * thread_depth;
 
 // fight the z with 1% the feature size
@@ -58,7 +65,7 @@ module helix() {
 		[thread_thickness_body, thread_depth],
 		[0, thread_depth],
 	];
-	translate([0, 0, length - thread_length - thread_thickness_body]) {
+	translate([0, 0, 0]) {
 		difference() {
 			rotate([0, -90, 0]) {
 				thread_extrude(cross_section,
@@ -75,12 +82,12 @@ module helix() {
 			//
 			// This is also not super general, might not work with very tight threads due to the cut
 			// bit being aligned to the very top. These threads are not parallel to the cube face.
-			translate([0, 0, thread_length - thread_spacing / 2]) {
+			translate([0, 0, -thread_spacing / 2]) {
 				// Thanks, Pythagoras
 				cut_length = sqrt(pow(inner_diameter / 2, 2) - pow(thread_inner_diameter / 2, 2));
 				// law of sines
 				cut_triangle_angle = asin(cut_length / (inner_diameter / 2));
-				rotate([0, 0, 90 - cut_triangle_angle]) {
+				rotate([0, 0, cut_triangle_angle]) {
 					cube([
 						thread_inner_diameter / 2 + eps,
 						thread_inner_diameter / 2,
@@ -92,41 +99,27 @@ module helix() {
 	}
 }
 
-module body() {
-	// main body
-	translate([0, 0, eps])
-		pipe(length, outer_diameter / 2, inner_diameter / 2);
-	difference() {
-		// flange
-		pipe(thickness, outer_diameter / 2 + flange_expansion, inner_diameter / 2 - eps);
-		// mount holes
-		translate([0, 0, -eps]) {
-			for (angle=[0:360/mounting_hole_count:360]) {
-				rotate([0, 0, angle])
-					translate([outer_diameter / 2 +
-							flange_ease_radius +
-							(flange_expansion - flange_ease_radius) / 2, 0, 0])
-					cylinder(h=inf, r=mounting_hole_diameter / 2, $fn=90);
-			}
-		}
-	}
-	// a concave fillet between the flange and the pipe body
-	translate([0, 0, thickness - eps]) {
-		rotate_extrude($fa=2) {
-			translate([outer_diameter / 2, 0, 0]) {
-				difference() {
-					square([flange_ease_radius, flange_ease_radius]);
-					translate([flange_ease_radius, flange_ease_radius])
-						circle(flange_ease_radius, $fn=60);
-				}
-			}
-		}
+module outer_body() {
+	pipe(visible_length + panel_thickness, outer_diameter / 2, inner_diameter / 2);
+	translate([0, 0, visible_length - collar_length]) {
+		pipe_outer_bevel(collar_length,
+			outer_diameter / 2,
+			outer_diameter / 2 + collar_width,
+			inner_diameter / 2 + eps);
 	}
 }
 
-module flange_nut() {
-	body();
+module threaded_body() {
+	if (debug_threads) {
+		#outer_body();
+	} else {
+		outer_body();
+	}
 	helix();
 }
 
-flange_nut();
+module hose_collar() {
+	threaded_body();
+}
+
+hose_collar();

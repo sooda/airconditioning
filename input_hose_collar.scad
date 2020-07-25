@@ -4,8 +4,12 @@
 // This piece goes directly through the window panel! The two-piece construction on the exhaust hose
 // is just to match and reuse the existing collar on it.
 
-// make the outer body translucent
-debug_threads = true;
+// the collar itself
+render_hose_part = true;
+// use this to check alignment and to debug the threads
+hose_translucent = true;
+// the rain filter
+render_outdoor_part = true;
 
 // outmost hose dimensions, by chance it's the same as the outer diameter of the exhaust hose collar
 hose_outer_diameter = 152;
@@ -43,6 +47,38 @@ thread_length = thread_lead * thread_revolutions;
 
 inner_diameter = hose_outer_diameter + 2 * thread_tolerance;
 thread_inner_diameter = inner_diameter - 2 * thread_depth;
+
+// how much to reserve outside the panel hole to glue to the actual flap mechanism
+flappipe_joinlength = 2;
+// this goes inside the hose attachment adapter
+flappipe_length = panel_thickness + flappipe_joinlength;
+// doesn't need to be very heavy, just smooth
+flappipe_thickness = 2;
+// there has to be some slop so the flap pipe that goes inside can be inserted smoothly
+flappipe_tolerance = 0.2;
+// the inner diameter is NOT consistent throughout the parts because the outer body is so thin
+flappipe_outer_diameter = inner_diameter - 2 * flappipe_tolerance;
+flappipe_inner_diameter = flappipe_outer_diameter - 2 * flappipe_thickness;
+// how much until full thickness
+flappipe_bevel_length = 10;
+// how much to take off from flappipe_thickness
+flappipe_bevel_thickness = 2;
+
+// the knob to join the indoor and outdoor parts is situated in the outdoor border and is this big
+lockknob_diameter = 10;
+// insertion depth
+lockslot_depth = 20;
+// "tangential" length along the side
+lockslot_length = 30;
+// total slop, not in "both sides" like the others here
+lockslot_clearance = 0.1;
+// "negative" clearance on the edge where the locking action should happen. This tiny fit blob is likely unnecessary, but let's see what happens with it.
+lockslot_tightfit = 0.2;
+
+// use this to lift the inner bit out for debugging
+parts_shift = 0;
+// angle for visual debugging of the lock knob
+lockviz_delta = 0;
 
 // fight the z with 1% the feature size
 eps = 0.01;
@@ -99,8 +135,32 @@ module helix() {
 	}
 }
 
-module outer_body() {
-	pipe(visible_length + panel_thickness, outer_diameter / 2, inner_diameter / 2);
+module lockknob_receptable(angle) {
+	lockknob_ang = angle_for_circumference(lockknob_diameter + 2 * lockslot_clearance, inner_diameter / 2);
+	lockslot_length_ang = angle_for_circumference(lockslot_length, inner_diameter / 2);
+	rotate([0, 0, angle - lockknob_ang / 2]) {
+		// cut down for the insertion slot
+		pizzaslice(lockslot_depth, inf, lockknob_ang);
+		difference() {
+			// cut along the main cylinder for rotation, ccw for cw locking
+			pizzaslice(lockknob_diameter + 2 * lockslot_clearance, inf, -(lockknob_ang + lockslot_length_ang));
+			// add back the tiny lock blob. This is not exactly the right position at the end, but
+			// doesn't matter, it's close enough
+			rotate([0, 0, -(lockslot_length_ang + 0.25 * lockknob_ang)])
+				rotate([0, 90, 0])
+					cylinder(h=2*inf, r=lockslot_clearance + lockslot_tightfit, $fn=30);
+		}
+	}
+}
+
+module hose_body() {
+	difference() {
+		pipe(visible_length + panel_thickness, outer_diameter / 2, inner_diameter / 2);
+		translate([0, 0, visible_length + panel_thickness - lockslot_depth + eps]) {
+			lockknob_receptable(0);
+			lockknob_receptable(180);
+		}
+	}
 	translate([0, 0, visible_length - collar_length]) {
 		pipe_outer_bevel(collar_length,
 			outer_diameter / 2,
@@ -110,16 +170,58 @@ module outer_body() {
 }
 
 module threaded_body() {
-	if (debug_threads) {
-		#outer_body();
+	if (hose_translucent) {
+		#hose_body();
 	} else {
-		outer_body();
+		hose_body();
 	}
 	helix();
 }
 
+module lockknob(ang) {
+	rotate([0, 0, ang]) {
+		translate([flappipe_inner_diameter / 2, 0, 0])
+		rotate([0, 90, 0]) {
+			// XXX: should be a half cone maybe
+			cylinder(flappipe_thickness + thickness, r=lockknob_diameter / 2, $fs=0.1);
+		}
+	}
+}
+
+module outdoor_part() {
+	// this part is positioned exactly at the panel face
+	translate([0, 0, visible_length]) {
+		if (true) {
+			color("green") {
+				difference() {
+					pipe(flappipe_length,
+						flappipe_outer_diameter / 2,
+						flappipe_inner_diameter / 2);
+					translate([0, 0, -eps])
+					pipe_inner_bevel(flappipe_bevel_length,
+						flappipe_outer_diameter / 2 + eps,
+						flappipe_outer_diameter / 2 - flappipe_bevel_thickness,
+						flappipe_outer_diameter / 2
+						);
+				}
+			}
+		}
+		color("magenta") {
+			translate([0, 0, panel_thickness - 3 * lockknob_diameter / 2]) {
+				lockknob(0);
+				lockknob(180);
+			}
+		}
+	}
+}
+
 module hose_collar() {
-	threaded_body();
+	if (render_hose_part)
+		threaded_body();
+	if (render_outdoor_part)
+	translate([0, 0, parts_shift])
+		rotate([0, 0, lockviz_delta])
+			outdoor_part();
 }
 
 hose_collar();

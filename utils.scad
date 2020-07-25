@@ -50,10 +50,22 @@ module pizzapipe(h, outer_r, inner_r, angle) {
 }
 
 module pizzaslice(h, r, angle) {
-	render() // avoid exponential growth
-	intersection() {
-		cylinder(h=h, r=r, $fn=180);
-		pizzamask(angle);
+	render() { // avoid exponential growth
+		if (angle < 0) {
+			// ccw
+			rotate([0, 0, angle]) {
+				intersection() {
+					cylinder(h=h, r=r, $fn=180);
+					pizzamask(-angle + eps);
+				}
+			}
+		} else {
+			// cw
+			intersection() {
+				cylinder(h=h, r=r, $fn=180);
+				pizzamask(angle);
+			}
+		}
 	}
 }
 

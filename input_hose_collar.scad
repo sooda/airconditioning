@@ -145,7 +145,7 @@ module lockknob_receptable(angle) {
 			// cut along the main cylinder for rotation, ccw for cw locking
 			pizzaslice(lockknob_diameter + 2 * lockslot_clearance, inf, -(lockknob_ang + lockslot_length_ang));
 			// add back the tiny lock blob. This is not exactly the right position at the end, but
-			// doesn't matter, it's close enough
+			// doesn't matter, it's close enough, or might not even exist depending on your print slicing.
 			rotate([0, 0, -(lockslot_length_ang + 0.25 * lockknob_ang)])
 				rotate([0, 90, 0])
 					cylinder(h=2*inf, r=lockslot_clearance + lockslot_tightfit, $fn=30);

@@ -3,6 +3,8 @@ my air conditioning adapters
 
 You probably won't need any of these highly specific 3D print designs.
 
+.. image:: hose_collars.jpg
+
 Procedure
 ---------
 
@@ -17,6 +19,14 @@ Procedure
 8. Hack up an intake hose connection out of cardboard and hose stuff from a hardware store
 9. 3D print neat attachments for the hose ends for easier use
 10. Document it so I'll remember later what has happened
+
+TODO
+~~~~
+
+* Optimize: find where air is leaking, insulate the hoses, etc.
+* Finish the outdoor parts to keep rain out.
+* Hack up something on the cool air vent to shoot the air at an adjustable angle so the machine could be placed more conveniently in a corner.
+* Buy a house or something to avoid this workaround shit in the first place.
 
 exhaust_adapter.scad
 --------------------
@@ -45,7 +55,16 @@ I haven't measured whether this makes a big difference.
 
 .. image:: input_screw_flange_threads.jpg
 
-The other end on the window will exist soon enough.
+input_hose_collar.scad
+----------------------
+
+Like the side on the machine input, this screws on the `biltema hose`_ but on the other end that goes on the window panel like the exhaust adapter.
+This is not an extra adapter but goes directly on the window panel.
+The inner part is again supposed to be glued to a flap mechanism or something, see the exhaust_adapter story.
+
+.. _biltema hose: https://www.biltema.fi/rakentaminen/lvi/ilmanvaihto/ilmanvaihtoletkut/ilmanvaihtoletku-2000031439
+
+.. image:: input_hose_collar.jpg
 
 The device
 ----------
